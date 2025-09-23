@@ -1,0 +1,4 @@
+allure-reports/*
+!allure-reports/
+node_modules/*
+!node_modules/.bin/
