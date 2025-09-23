@@ -10,10 +10,10 @@ export default defineConfig({
   timeout: 30 * 1000, // 30 seconds
 
   // ✅ Run tests in files in parallel (default: true)
-  fullyParallel: true,
+  fullyParallel: false,
 
   // ✅ Retry failed tests
-  retries: 1,
+  retries: 0,
 
   // ✅ Number of parallel workers (use CPU cores by default)
   workers: undefined, // or set manually, e.g. 4
@@ -22,27 +22,48 @@ export default defineConfig({
   reporter: [
     ['line'], 
     ['html', { open: 'never' }], 
-    ['json', { outputFile: 'results.json' }]
+    ['json', { outputFile: 'results.json' }],
+    ['allure-playwright', { outputFolder: 'allure-results' }]
   ],
 
   // ✅ Shared settings for all tests
   use: {
-    baseURL: 'https://playwright.dev',
-    headless: false,
-    screenshot: 'only-on-failure',
+    baseURL: 'https://www.ebay.com/',
+    headless: true,
+    screenshot: 'on',
     video: 'retain-on-failure',
     trace: 'on-first-retry', // record trace on retry for debugging
+    // launchOptions: {
+    //   args: ['--start-maximized'],
+    // },
+    // viewport: null,
   },
 
   // ✅ Define multiple projects (cross-browser)
   projects: [
+    // {
+    //   name: 'chromium',
+    //   use: { ...devices['Desktop Chrome'] },
+    // },
+    // {
+    //   name: 'firefox',
+    //   use: { ...devices['Desktop Firefox'] },
+    // },
     {
-      name: 'chromium',
-      use: { ...devices['Desktop Chrome'] },
+      name: 'Google Chrome',
+      use: {
+        channel: 'chrome', // runs actual Chrome
+        ...devices['Desktop Chrome'],
+      },
     },
+
+    // ✅ Microsoft Edge
     {
-      name: 'firefox',
-      use: { ...devices['Desktop Firefox'] },
+      name: 'Microsoft Edge',
+      use: {
+        channel: 'msedge', // runs actual Edge
+        ...devices['Desktop Edge'],
+      },
     },
   ],
 
