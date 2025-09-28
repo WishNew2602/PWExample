@@ -23,7 +23,7 @@ test('naukri resume upload', async ({ page }) => {
   // });
 
   await test.step('Upload Resume using AutoIT', async () => {
-    await page.getByRole('link', { name: 'View profile' }).click();
+    await page.locator('//a[(text()="View")]').click();
     await page.getByRole('emphasis').filter({ hasText: 'editOneTheme' }).click();
     await page.getByRole('button', { name: 'Save' }).click();
   });

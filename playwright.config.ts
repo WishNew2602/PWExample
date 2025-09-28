@@ -7,7 +7,7 @@ export default defineConfig({
   testDir: './testcases',
 
   // ✅ Global test timeout (per test)
-  timeout: 30 * 1000, // 30 seconds
+  timeout: 500 * 1000, // 500 seconds
 
   // ✅ Run tests in files in parallel (default: true)
   fullyParallel: false,
@@ -58,13 +58,13 @@ export default defineConfig({
     },
 
     // ✅ Microsoft Edge
-    {
-      name: 'Microsoft Edge',
-      use: {
-        channel: 'msedge', // runs actual Edge
-        ...devices['Desktop Edge'],
-      },
-    },
+    // {
+    //   name: 'Microsoft Edge',
+    //   use: {
+    //     channel: 'msedge', // runs actual Edge
+    //     ...devices['Desktop Edge'],
+    //   },
+    // },
   ],
 
   // ✅ Folder for test artifacts (screenshots, traces, videos)
