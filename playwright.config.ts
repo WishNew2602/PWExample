@@ -1,32 +1,17 @@
-// playwright.config.ts
 import { defineConfig, devices } from '@playwright/test';
 
-
 export default defineConfig({
-  // ✅ Where Playwright should look for test files
   testDir: './testcases',
-
-  // ✅ Global test timeout (per test)
-  timeout: 500 * 1000, // 500 seconds
-
-  // ✅ Run tests in files in parallel (default: true)
+  timeout: 500 * 1000,
   fullyParallel: false,
-
-  // ✅ Retry failed tests
   retries: 0,
-
-  // ✅ Number of parallel workers (use CPU cores by default)
   workers: undefined, // or set manually, e.g. 4
-
-  // ✅ Configure reporters (console + HTML + JSON)
   reporter: [
     ['line'], 
     ['html', { open: 'never' }], 
     ['json', { outputFile: 'results.json' }],
     ['allure-playwright', { outputFolder: 'allure-results' }]
   ],
-
-  // ✅ Shared settings for all tests
   use: {
     baseURL: 'https://www.ebay.com/',
     headless: true,
@@ -38,8 +23,6 @@ export default defineConfig({
     // },
     // viewport: null,
   },
-
-  // ✅ Define multiple projects (cross-browser)
   projects: [
     // {
     //   name: 'chromium',
@@ -56,8 +39,6 @@ export default defineConfig({
         ...devices['Desktop Chrome'],
       },
     },
-
-    // ✅ Microsoft Edge
     // {
     //   name: 'Microsoft Edge',
     //   use: {
@@ -66,9 +47,7 @@ export default defineConfig({
     //   },
     // },
   ],
-
-  // ✅ Folder for test artifacts (screenshots, traces, videos)
   outputDir: 'test-results/',
 });
 
-console.log("✅ Playwright config loaded!");
+console.log("Playwright config loaded!");
