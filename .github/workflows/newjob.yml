@@ -1,5 +1,7 @@
-name: Playwright - E2E Testing
+name: Playwright - E2E Testing with one job
 
+# This workflow runs Playwright tests on push, pull request, and on a schedule.
+# uses data serialization language like yaml
 on:
   push:
     branches: [main, develop]
@@ -7,12 +9,29 @@ on:
     branches: [main]
   schedule:
     - cron: '0 2 * * *'
+    # '* * * * *' means 1st star is minute, 2nd is hour, 3rd is day of month, 4th is month, 5th is day of week
+    # so '0 2 * * *' means at 2:00 AM every day
   workflow_dispatch:
     inputs:
+      tags:
+        description: 'Comma-separated list of tags to filter Playwright tests'
+        required: false
+        default: ''
+        type: string
       browser:
         description: 'Browser to run Playwright tests on'
+        required: true
         default: 'chromium'
         type: choice
+        # type has options: choice, boolean, environment, string
+        # choice means user can select from predefined options in the UI when manually triggering the workflow
+        # boolean would show a checkbox in the UI
+        # environment would read from environment variables
+        #example of environment input:
+        # env: BROWSER
+        # would read the value of BROWSER environment variable when workflow is triggered
+        
+        # string would allow free text input
         options: [chromium, firefox, webkit]
       workers:
         description: 'number of parallel workers'
@@ -49,6 +68,8 @@ jobs:
       - name: Run Playwright tests
         run: |
           npx playwright test \
+          --grep "${{ github.event.inputs.tags }}" \
+          --project=${{ github.event.inputs.browser || 'chromium' }} \
           --reporter=${{ github.event.inputs.reporter || 'html' }} \
           --workers=${{ github.event.inputs.workers || '4' }}
         continue-on-error: true
