@@ -20,23 +20,55 @@ on:
           - json
 
 jobs:
-  playwright:
+  # Job 1: Setup and download dependencies
+  setup-dependencies:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 15
     
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout code
+        uses: actions/checkout@v3
       
-      - uses: actions/setup-node@v3
+      - name: Setup Node.js 18
+        uses: actions/setup-node@v3
         with:
           node-version: '18'
           cache: 'npm'
       
-      - name: Install dependencies
+      - name: Install npm dependencies
         run: npm install
       
       - name: Install Playwright browsers
         run: npx playwright install --with-deps
+      
+      - name: Upload dependencies artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: dependencies-artifact
+          path: |
+            node_modules/
+            .playwright/
+          retention-days: 1
+
+  # Job 2: Run Playwright tests (depends on setup-dependencies)
+  run-tests:
+    needs: setup-dependencies
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      
+      - name: Setup Node.js 18
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+      
+      - name: Download dependencies
+        uses: actions/download-artifact@v3
+        with:
+          name: dependencies-artifact
       
       - name: Run Playwright tests
         run: npx playwright test --reporter=${{ github.event.inputs.reporter || 'html' }}
@@ -52,7 +84,7 @@ jobs:
           retention-days: 30
           comment-on-pr: 'true'
       
-      # Upload JSON report
+      # Upload test results
       - name: Upload Test Results
         if: always()
         uses: ./.github/actions/report-artifact
