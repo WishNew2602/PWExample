@@ -9,6 +9,16 @@ on:
     - cron: '0 2 * * *'  # Daily at 2 AM UTC
   workflow_dispatch:
     inputs:
+      workers:
+        description: 'number of parallel workers for playwright tests'
+        required: false
+        default: '4'
+        type: choice
+        options:
+          - '1'
+          - '2'
+          - '4'
+          - '8'  
       reporter:
         description: 'Playwright reporter'
         required: false
@@ -42,7 +52,7 @@ jobs:
         run: npx playwright install --with-deps
       
       - name: Upload dependencies artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: dependencies-artifact
           path: |
@@ -66,12 +76,12 @@ jobs:
           node-version: '18'
       
       - name: Download dependencies
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: dependencies-artifact
       
       - name: Run Playwright tests
-        run: npx playwright test --reporter=${{ github.event.inputs.reporter || 'html' }}
+        run: npx playwright test --reporter=${{ github.event.inputs.reporter || 'html' }} --workers=${{ github.event.inputs.workers || '4' }}
         continue-on-error: true  # Continue even if tests fail
       
       # Upload HTML report
