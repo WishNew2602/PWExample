@@ -1,0 +1,56 @@
+name: 'Upload Test Report'
+description: 'Upload test reports and artifacts - Reusable composite action'
+
+inputs:
+  report-path:
+    description: 'Path to test report or artifacts directory'
+    required: true
+  
+  report-name:
+    description: 'Name of the artifact (for identification)'
+    required: true
+  
+  retention-days:
+    description: 'Number of days to retain the artifact'
+    required: false
+    default: '30'
+  
+  if-no-files-found:
+    description: 'What to do if no files are found (warn, error, ignore)'
+    required: false
+    default: 'warn'
+  
+  comment-on-pr:
+    description: 'Comment on PR with results'
+    required: false
+    default: 'false'
+
+runs:
+  using: 'composite'
+  
+  steps:
+    # Step 1: Upload artifacts
+    - name: 📤 Upload ${{ inputs.report-name }}
+      uses: actions/upload-artifact@v3
+      if: always()  # Always run, even if tests fail
+      with:
+        name: ${{ inputs.report-name }}
+        path: ${{ inputs.report-path }}
+        retention-days: ${{ inputs.retention-days }}
+        if-no-files-found: ${{ inputs.if-no-files-found }}
+    
+    # Step 2: Comment on PR (optional)
+    - name: 💬 Comment on PR
+      if: always() && github.event_name == 'pull_request' && inputs.comment-on-pr == 'true'
+      uses: actions/github-script@v6
+      with:
+        script: |
+          const fs = require('fs');
+          const reportPath = '${{ inputs.report-path }}';
+          
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: '✅ Test report uploaded: **${{ inputs.report-name }}**\n\nDownload from Artifacts tab →'
+          });

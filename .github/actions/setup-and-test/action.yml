@@ -1,0 +1,55 @@
+name: 'Setup and Run Tests'
+description: 'Setup Node.js environment and run tests - Reusable composite action'
+
+inputs:
+  node-version:
+    description: 'Node.js version to use'
+    required: false
+    default: '18'
+  
+  test-command:
+    description: 'Test command to run (e.g., npm test, npm run test:e2e)'
+    required: true
+  
+  install-command:
+    description: 'Install command to run'
+    required: false
+    default: 'npm install'
+  
+  cache-enabled:
+    description: 'Enable npm cache for faster builds'
+    required: false
+    default: 'true'
+
+outputs:
+  test-result:
+    description: 'Exit code from test run'
+    value: ${{ steps.test.outputs.exit_code }}
+
+runs:
+  using: 'composite'
+  
+  steps:
+    # Step 1: Checkout repository code
+    - name: 📥 Checkout repository
+      uses: actions/checkout@v3
+    
+    # Step 2: Setup Node.js environment
+    - name: 🟢 Setup Node.js ${{ inputs.node-version }}
+      uses: actions/setup-node@v3
+      with:
+        node-version: ${{ inputs.node-version }}
+        cache: ${{ inputs.cache-enabled == 'true' && 'npm' || '' }}
+    
+    # Step 3: Install dependencies
+    - name: 📦 Install dependencies
+      run: ${{ inputs.install-command }}
+      shell: bash
+    
+    # Step 4: Run tests
+    - name: 🧪 Run tests
+      id: test
+      run: |
+        ${{ inputs.test-command }}
+        echo "exit_code=$?" >> $GITHUB_OUTPUT
+      shell: bash

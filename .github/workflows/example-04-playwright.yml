@@ -1,0 +1,75 @@
+name: Playwright - E2E Testing
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: '0 2 * * *'  # Daily at 2 AM UTC
+  workflow_dispatch:
+    inputs:
+      reporter:
+        description: 'Playwright reporter'
+        required: false
+        default: 'html'
+        type: choice
+        options:
+          - html
+          - list
+          - json
+
+jobs:
+  playwright:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    
+    steps:
+      - uses: actions/checkout@v3
+      
+      - uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm install
+      
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps
+      
+      - name: Run Playwright tests
+        run: npx playwright test --reporter=${{ github.event.inputs.reporter || 'html' }}
+        continue-on-error: true  # Continue even if tests fail
+      
+      # Upload HTML report
+      - name: Upload Playwright Report
+        if: always()
+        uses: ./.github/actions/report-artifact
+        with:
+          report-path: playwright-report/
+          report-name: playwright-html-report
+          retention-days: 30
+          comment-on-pr: 'true'
+      
+      # Upload JSON report
+      - name: Upload Test Results
+        if: always()
+        uses: ./.github/actions/report-artifact
+        with:
+          report-path: test-results/
+          report-name: playwright-test-results
+          retention-days: 7
+      
+      # Comment on PR with summary
+      - name: Comment test summary
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v6
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '🎭 **Playwright Tests Summary**\n\n✅ All tests have completed!\n\nView full report in Artifacts → playwright-html-report'
+            })

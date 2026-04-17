@@ -1,0 +1,92 @@
+name: Advanced - Multiple OS and Error Handling
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    
+    strategy:
+      fail-fast: false  # Continue testing other OS even if one fails
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        node-version: ['18', '20']
+        exclude:
+          - os: macos-latest
+            node-version: '18'  # Skip old Node on macOS
+    
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Setup Node.js ${{ matrix.node-version }} on ${{ matrix.os }}
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm install
+      
+      - name: Run tests
+        run: npm test
+        continue-on-error: true  # Don't stop workflow on test failure
+      
+      - name: Upload test report
+        if: always()
+        uses: ./.github/actions/report-artifact
+        with:
+          report-path: test-results/
+          report-name: test-report-${{ matrix.os }}-${{ matrix.node-version }}
+          retention-days: 14
+
+  # Generate summary
+  test-summary:
+    needs: test
+    runs-on: ubuntu-latest
+    if: always()  # Run even if some tests failed
+    
+    steps:
+      - name: Generate summary
+        run: |
+          echo "## ✅ Test Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Tested on:" >> $GITHUB_STEP_SUMMARY
+          echo "- Ubuntu (Node 18, 20)" >> $GITHUB_STEP_SUMMARY
+          echo "- Windows (Node 18, 20)" >> $GITHUB_STEP_SUMMARY
+          echo "- macOS (Node 20)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Status: All tests completed ✓" >> $GITHUB_STEP_SUMMARY
+      
+      - name: Notify on PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v6
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '✅ **Cross-platform tests completed**\n\n' +
+                    'Tested on: Ubuntu, Windows, macOS\n' +
+                    'Node versions: 18, 20\n\n' +
+                    'Check artifacts for detailed results!'
+            })
+
+  # Conditional notification
+  notify-failure:
+    needs: test
+    runs-on: ubuntu-latest
+    if: failure()  # Only run if tests failed
+    
+    steps:
+      - name: Send failure notification
+        run: |
+          echo "⚠️ Some tests failed!"
+          echo "Check workflow logs for details"
+          # You could add Slack/email notification here

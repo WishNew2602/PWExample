@@ -1,0 +1,79 @@
+name: Build and Deploy - Multi-Stage Pipeline
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  # Job 1: Test
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    
+    steps:
+      - name: Setup and run tests
+        uses: ./.github/actions/setup-and-test
+        with:
+          node-version: '18'
+          test-command: npm test
+          install-command: npm install
+          cache-enabled: 'true'
+      
+      - name: Upload test report
+        if: always()
+        uses: ./.github/actions/report-artifact
+        with:
+          report-path: test-results/
+          report-name: test-report
+          retention-days: 30
+
+  # Job 2: Build (depends on test)
+  build:
+    needs: test
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v3
+      
+      - uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+      
+      - run: npm install
+      
+      - name: Build application
+        run: npm run build
+      
+      - name: Upload build artifact
+        uses: ./.github/actions/report-artifact
+        with:
+          report-path: dist/
+          report-name: build-artifacts
+          retention-days: 7
+
+  # Job 3: Deploy (only on main branch, depends on build)
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Download build artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: build-artifacts
+          path: ./dist/
+      
+      - name: Deploy to production
+        run: |
+          echo "🚀 Deploying to production..."
+          echo "Files in dist directory:"
+          ls -la dist/
+          # Add your deployment commands here
+          # Example: npm run deploy

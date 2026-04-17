@@ -1,0 +1,45 @@
+name: Matrix - Test Multiple Node Versions
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    
+    strategy:
+      matrix:
+        node-version: ['16', '18', '20']  # Test multiple Node versions
+    
+    steps:
+      # Use custom action with matrix variable
+      - name: Setup Node ${{ matrix.node-version }} and run tests
+        uses: ./.github/actions/setup-and-test
+        with:
+          node-version: ${{ matrix.node-version }}
+          test-command: npm test
+          install-command: npm install
+          cache-enabled: 'true'
+      
+      - name: Upload results for Node ${{ matrix.node-version }}
+        if: always()
+        uses: ./.github/actions/report-artifact
+        with:
+          report-path: test-results/
+          report-name: test-report-node-${{ matrix.node-version }}
+          retention-days: 7
+
+  # Summary job that depends on all test jobs
+  test-summary:
+    needs: test
+    runs-on: ubuntu-latest
+    if: always()
+    
+    steps:
+      - name: ✅ All tests completed
+        run: echo "Test matrix completed for Node versions 16, 18, 20"
